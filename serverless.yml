@@ -1,0 +1,60 @@
+service: aws-credentials-issuer
+
+package:
+  exclude:
+    - ./**
+  include:
+    - vendored/**
+    - handler.py
+
+provider:
+  name: aws
+  runtime: python3.6
+  region: eu-central-1
+
+functions:
+  auth:
+    handler: handler.auth
+    cors: true
+  credentialGeneratorEndpoint:
+    handler: handler.generate_credentials
+    events:
+      - http:
+          path: api/credentials
+          method: get
+          authorizer:
+            name: auth
+            identitySource: method.request.header.Authorization
+            type: request
+          cors: true
+
+resources:
+  Resources:
+    # This response is needed for custom authorizer failures cors support ¯\_(ツ)_/¯
+    GatewayResponse:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        ResponseType: EXPIRED_TOKEN
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+        StatusCode: '401'
+    AuthFailureGatewayResponse:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        ResponseType: UNAUTHORIZED
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+        StatusCode: '401'
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
