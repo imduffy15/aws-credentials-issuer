@@ -4,6 +4,10 @@ import os
 import jwt
 
 def auth(event, context):
+    if 'headers' not in event or 'Authorization' not in event['headers'] or 'queryStringParameters' not in event or 'role' not in event['queryStringParameters']:
+        print(f'Bad request, authorization header or role missing')
+        raise Exception('Unauthorized')
+
     whole_auth_token = event['headers']['Authorization']
     if not whole_auth_token:
         print(f'Token not found: {event}')
@@ -13,14 +17,19 @@ def auth(event, context):
     auth_token = token_parts[1]
     token_method = token_parts[0]
 
+    requestedRoleARN = event['queryStringParameters']['role']
+
     if not (token_method.lower() == 'bearer' and auth_token):
         print("Failing due to invalid token_method or missing auth_token")
         raise Exception('Unauthorized')
 
     try:
         claims = jwt_verify(auth_token, '')
-        policy = generate_policy(claims['sub'], 'Allow', event['methodArn'])
-        return policy
+        if 'roles' in claims and requestedRoleARN in claims['roles']:
+            return generate_policy(claims['sub'], 'Allow', event['methodArn'])
+        else:
+            print("Failing due to token not containing the requested role")
+            raise Exception('Unauthorized')
     except Exception as e:
         print(f'Exception encountered: {e}')
         raise Exception('Unauthorized')
