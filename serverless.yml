@@ -6,7 +6,7 @@ provider:
   region: eu-central-1
   environment:
     CLIENT_ID: 'aws-credentials-issuer'
-    CERTS_URL: 'https://iam.tooling.ianduffy.ie.com/auth/realms/ianduffy/protocol/openid-connect/certs'
+    CERTS_URL: 'https://idp/auth/realms/ianduffy/protocol/openid-connect/certs'
 
 functions:
   credentialGeneratorEndpoint:

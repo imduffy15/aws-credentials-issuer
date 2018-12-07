@@ -1,16 +1,11 @@
 import boto3
 import datetime
 import json
-import jwt
 import os
 import urllib
 import requests
-import struct
 from arnparse import arnparse
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
-from jwt.exceptions import InvalidKeyError
-from jwt.utils import base64url_decode
+from jose import jwt
 
 CLIENT_ID = os.getenv('CLIENT_ID')
 CERTS_URL = os.getenv('CERTS_URL')
@@ -19,54 +14,37 @@ json.JSONEncoder.default = lambda self, obj: (
     obj.isoformat() if isinstance(obj, datetime.datetime) else None)
 
 
-def jwt_verify(auth_token):
-    header_segment = auth_token.split('.')[0]
-    header = json.loads(base64url_decode(header_segment).decode('utf-8'))
-    kid = header['kid']
-    key = load_keystore(CERTS_URL)[kid]
-    payload = jwt.decode(auth_token, key=key, verify=True, audience=CLIENT_ID)
-    return payload
+def jwt_verify(token):
+    jwks = requests.get(CERTS_URL).json()
+    unverified_header = jwt.get_unverified_header(token)
+    rsa_key = {}
 
+    for key in jwks["keys"]:
+        if key["kid"] == unverified_header["kid"]:
+            rsa_key = key
+            break
 
-def load_keystore(jwks_uri):
-    resp = requests.get(url=jwks_uri)
-    keystore = resp.json()["keys"]
-    ret = {}
-    for key in keystore:
-        kid = key['kid']
-        ret[kid] = from_jwk(key)
-    return ret
-
-
-def from_jwk(obj):
-    if obj.get('kty') != 'RSA':
-        raise InvalidKeyError('Not an RSA key')
-
-    # Public key
-    numbers = RSAPublicNumbers(
-        from_base64url_uint(obj['e']), from_base64url_uint(obj['n'])
+    return jwt.decode(
+        token,
+        rsa_key,
+        algorithms=unverified_header["alg"],
+        audience=CLIENT_ID
     )
-
-    return numbers.public_key(default_backend())
-
-
-def from_base64url_uint(val):
-    if isinstance(val, str):
-        val = val.encode('ascii')
-
-    data = base64url_decode(val)
-
-    buf = struct.unpack('%sB' % len(data), data)
-    return int(''.join(["%02x" % byte for byte in buf]), 16)
 
 
 def console_login(event, context):
-    credentials = json.loads(generate_credentials(event, context)['body'])
+    credentials_resp = generate_credentials(event, context)
+    credentials = json.loads(credentials_resp['body'])
+
+    if not all(k in credentials for k in ("AccessKeyId", "SecretAccessKey", "SessionToken")):
+        return credentials_resp
+
     json_string_with_temp_credentials = json.dumps({
         "sessionId":  credentials['AccessKeyId'],
         "sessionKey": credentials['SecretAccessKey'],
         "sessionToken": credentials['SessionToken']
     })
+
     request_parameters = "?Action=getSigninToken"
     request_parameters += "&Session=" + \
         urllib.parse.quote_plus(json_string_with_temp_credentials)
@@ -82,12 +60,7 @@ def console_login(event, context):
     request_parameters += "&SigninToken=" + signin_token["SigninToken"]
     request_url = "https://signin.aws.amazon.com/federation" + request_parameters
 
-    return {
-        'statusCode': 301,
-        'headers': {
-            'location': request_url
-        }
-    }
+    return create_aws_lambda_response(200, {'url': request_url})
 
 
 def generate_credentials(event, context):
