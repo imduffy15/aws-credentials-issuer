@@ -24,3 +24,6 @@ node_modules
 .vscode
 .history
 
+data
+jwks.json
+

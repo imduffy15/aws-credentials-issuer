@@ -8,14 +8,15 @@ from arnparse import arnparse
 from jose import jwt
 
 CLIENT_ID = os.getenv('CLIENT_ID')
-CERTS_URL = os.getenv('CERTS_URL')
 
 json.JSONEncoder.default = lambda self, obj: (
     obj.isoformat() if isinstance(obj, datetime.datetime) else None)
 
 
 def jwt_verify(token):
-    jwks = requests.get(CERTS_URL).json()
+    jwksPath = os.environ['LAMBDA_TASK_ROOT'] + "/jwks.json"
+    jwks = json.loads(open(jwksPath).read())
+
     unverified_header = jwt.get_unverified_header(token)
     rsa_key = {}
 

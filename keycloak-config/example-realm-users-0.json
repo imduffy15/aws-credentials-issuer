@@ -1,0 +1,35 @@
+{
+  "realm" : "example-realm",
+  "users" : [ {
+    "id" : "08ff1c2d-73a2-4bc8-9f16-43eea9ac42ab",
+    "createdTimestamp" : 1544221138968,
+    "username" : "demo",
+    "enabled" : true,
+    "totp" : false,
+    "emailVerified" : true,
+    "firstName" : "Demo",
+    "lastName" : "User",
+    "email" : "demo@domain.tld",
+    "credentials" : [ {
+      "type" : "password",
+      "hashedSaltedValue" : "u0VF0dTmnNqRUporbsWOHaCZ5mL7mUe/K234mK92i3KJ/tnb/+eeNC7jVKT8Eu4hWZA6hLWUcavY2czwR1OBjg==",
+      "salt" : "h+6ghOf3Is5b/4e0Bp5ajw==",
+      "hashIterations" : 27500,
+      "counter" : 0,
+      "algorithm" : "pbkdf2-sha256",
+      "digits" : 0,
+      "period" : 0,
+      "createdDate" : 1544221148215,
+      "config" : { }
+    } ],
+    "disableableCredentialTypes" : [ "password" ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "uma_authorization", "offline_access" ],
+    "clientRoles" : {
+      "aws-credentials-issuer" : [ "arn:aws:iam::402918372480:role/s3" ],
+      "account" : [ "manage-account", "view-profile" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ ]
+  } ]
+}

@@ -1,12 +1,19 @@
 service: aws-credentials-issuer
 
+package:
+  exclude:
+    - ./**
+  include:
+    - ./lambda_handler.py
+    - ./jwks.json
+
 provider:
   name: aws
   runtime: python3.6
   region: eu-central-1
   environment:
     CLIENT_ID: 'aws-credentials-issuer'
-    CERTS_URL: 'https://idp/auth/realms/ianduffy/protocol/openid-connect/certs'
+    CERTS_URL: 'http://localhost:8080/auth/realms/example-realm/protocol/openid-connect/certs'
 
 functions:
   credentialGeneratorEndpoint:
@@ -55,6 +62,18 @@ resources:
                 - sts:AssumeRole
 plugins:
   - serverless-python-requirements
+  - serverless-plugin-scripts
+  - serverless-finch
+
 custom:
   pythonRequirements:
     dockerizePip: non-linux
+  scripts:
+    hooks:
+      'package:initialize': ./package.sh
+      'client:deploy:deploy': ./build.sh
+  client:
+    bucketName: ianduffy-aws-credentials-issuer
+    distributionFolder: ui/dist
+    indexDocument: index.html
+    errorDocument: index.html

@@ -1,0 +1,16 @@
+keycloak:
+  image: "jboss/keycloak:4.7.0.Final"
+  command: ["-b", "0.0.0.0", "-Dkeycloak.migration.action=import", "-Dkeycloak.migration.provider=dir", "-Dkeycloak.migration.dir=/opt/jboss/keycloak/realm-config", "-Dkeycloak.migration.strategy=OVERWRITE_EXISTING"]
+# command: ["-b", "0.0.0.0", "-Dkeycloak.migration.action=export", "-Dkeycloak.migration.provider=dir", "-Dkeycloak.migration.dir=/opt/jboss/keycloak/realm-config"]
+  volumes:
+    - ./keycloak-config:/opt/jboss/keycloak/realm-config
+#    - ./data:/opt/jboss/keycloak/standalone/data
+  environment:
+#    - KEYCLOAK_USER=admin
+#    - KEYCLOAK_PASSWORD=password
+    - KEYCLOAK_LOGLEVEL=DEBUG
+    - KEYCLOAK_THEME_STATIC_MAX_AGE=-1
+    - KEYCLOAK_THEME_CACHE_THEMES=false
+    - KEYCLOAK_THEME_CACHE_TEMPLATES=false
+  ports:
+    - 8080:8080
