@@ -13,7 +13,6 @@ provider:
   region: eu-central-1
   environment:
     CLIENT_ID: 'aws-credentials-issuer'
-    CERTS_URL: 'http://localhost:8080/auth/realms/example-realm/protocol/openid-connect/certs'
 
 functions:
   credentialGeneratorEndpoint:

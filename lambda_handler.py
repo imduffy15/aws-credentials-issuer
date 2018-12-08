@@ -41,7 +41,7 @@ def console_login(event, context):
         return credentials_resp
 
     json_string_with_temp_credentials = json.dumps({
-        "sessionId":  credentials['AccessKeyId'],
+        "sessionId": credentials['AccessKeyId'],
         "sessionKey": credentials['SecretAccessKey'],
         "sessionToken": credentials['SessionToken']
     })
@@ -66,7 +66,8 @@ def console_login(event, context):
 
 def generate_credentials(event, context):
     if 'headers' not in event or 'Authorization' not in event['headers']:
-        return create_aws_lambda_response(400, {'error_message': 'No authorization header found.'})
+        return create_aws_lambda_response(
+            400, {'error_message': 'No authorization header found.'})
 
     whole_auth_token = event['headers']['Authorization']
     token_parts = whole_auth_token.split(' ')
@@ -74,9 +75,13 @@ def generate_credentials(event, context):
     token_method = token_parts[0]
 
     if not (token_method.lower() == 'bearer' and auth_token):
-        return create_aws_lambda_response(400, {'error message': 'Invalid authorization token'})
+        return create_aws_lambda_response(
+            400, {'error message': 'Invalid authorization token'})
 
-    if 'queryStringParameters' not in event or 'role' not in event['queryStringParameters']:
+    print(json.dumps(event))
+
+    if 'queryStringParameters' not in event or event[
+            'queryStringParameters'] is None or 'role' not in event['queryStringParameters']:
         return create_aws_lambda_response(400, {
             'error_message': 'You must provide a role arn via the query parameter \'role\''})
 
@@ -84,14 +89,16 @@ def generate_credentials(event, context):
 
     try:
         arnparse(requested_role_raw_arn)
-    except:
-        return create_aws_lambda_response(400, {'error_message': 'invalid role arn'})
+    except BaseException:
+        return create_aws_lambda_response(
+            400, {'error_message': 'invalid role arn'})
 
     try:
         claims = jwt_verify(auth_token)
 
         if 'roles' not in claims or requested_role_raw_arn not in claims['roles']:
-            return create_aws_lambda_response(403, {'error_message': 'role not allowed'})
+            return create_aws_lambda_response(
+                403, {'error_message': 'role not allowed'})
 
         sts_client = boto3.client('sts')
         assumed_role_object = sts_client.assume_role(
@@ -104,8 +111,12 @@ def generate_credentials(event, context):
         return create_aws_lambda_response(500, {'error_message': str(e)})
 
 
-def create_aws_lambda_response(status_code, message,
-                               headers={'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': True}):
+def create_aws_lambda_response(
+    status_code,
+    message,
+    headers={
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': True}):
     return {
         'statusCode': status_code,
         'headers': headers,
